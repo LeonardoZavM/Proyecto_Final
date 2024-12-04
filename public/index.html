@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+</head>
+<body>
+    <div class="w3-row">
+        <div class="w3-col l4 w3-padding">
+            
+            <form class="w3-container w3-padding" id="jsonForm">
+                <label for="name">Ingrese nombre:</label>
+                <input class="w3-input" type="text" id="Name" name="Name" required autocomplete="off">
+                
+                <button class="w3-input w3-button w3-green"" type="submit" id="btnSubmit">Insertar registro</button>
+                <br>
+                <button class="w3-input w3-button w3-blue" type="button" id="consultar">consultar clientes</button>
+                <br>
+                
+                <button class="w3-input w3-button w3-orange" type="button" id="goToMenu">Ir al Menú</button>
+            </form>
+        </div>
+        <div class="w3-col l8">
+            <table class="w3-table">
+                <thead>
+                    <tr>
+                        <th>Registro y consulta de clientes</th>
+                    </tr>
+                </thead>
+                <tbody id="tdatos"></tbody>
+            </table>
+        </div>
+    </div>
+    
+</body>          
+<script>
+    document.getElementById('jsonForm').addEventListener('submit', function(event) {
+    event.preventDefault();  // Evitar envío del formulario estándar
+
+    const form = document.getElementById('jsonForm');
+    const formData = new FormData(form);
+    const jsonData = JSON.stringify(Object.fromEntries(formData));
+    
+    const oldName = document.getElementById('editName')?.value;  // Obtener el nombre original
+
+    // Construir la URL usando el nombre del cliente
+    const url = oldName ? `/update/${encodeURIComponent(oldName)}` : '/insert';
+    const method = oldName ? 'PUT' : 'POST';
+
+    fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: jsonData
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.message);
+        form.reset();
+        if (document.getElementById('editName')) {
+            document.getElementById('editName').remove();  // Eliminar campo oculto
+        }
+        document.getElementById('btnSubmit').innerText = 'Insertar registro';
+        consultar();  // Actualizar la tabla
+    })
+    .catch(error => console.error('Error:', error));
+});
+
+
+document.getElementById('consultar').addEventListener('click', consultar);
+
+    function consultar() {
+    fetch('/getAll')
+    .then(response => response.json())
+    .then(data => {
+        let h = '';
+        data.forEach(d => {
+            h += `<tr>
+                <td>${d.Name}</td>
+                <td>
+                    <button class="w3-button w3-yellow" onclick="editar('${d.Name}')">Editar</button>
+                    <button class="w3-button w3-red" onclick="eliminar('${d.ID}')">Eliminar</button>
+                </td>
+            </tr>`;
+        });
+        document.getElementById('tdatos').innerHTML = h;
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+
+
+
+function editar(Name) {
+    console.log("Editando cliente:", Name);
+    document.getElementsByName('Name')[0].value = Name;
+
+    // Guardar el nombre en lugar del ID
+    if (!document.getElementById('editName')) {
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.id = 'editName';
+        hiddenInput.name = 'oldName';
+        document.getElementById('jsonForm').appendChild(hiddenInput);
+    }
+    document.getElementById('editName').value = Name;
+
+    document.getElementById('btnSubmit').innerText = 'Actualizar registro';
+}
+
+function eliminar(ID) {
+    if (confirm('¿Estás seguro de que deseas eliminar este registro?')) {
+        fetch(`/delete/${ID}`, { method: 'DELETE' })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message);  // Muestra mensaje de respuesta
+            consultar();  // Actualiza la tabla
+        })
+        .catch(error => console.error('Error:', error));
+    }
+}
+
+document.getElementById('goToMenu').addEventListener('click', function() {
+    window.location.href = 'menu.html';
+});
+
+</script>
+</body>
+</html>
